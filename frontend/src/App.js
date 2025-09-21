@@ -14,16 +14,17 @@ function App() {
     "What are my recent transactions?",
     "How to contact customer support?",
   ];
-  const handleSend = async () => {
-    if (!question.trim()) return;
+  const handleSend = async (q = null) => {
+    const userQuestion = q || question;
+    if (!userQuestion.trim()) return;
 
     // Add user message to chat
-    setMessages((prev) => [...prev, { sender: "user", text: question }]);
+    setMessages((prev) => [...prev, { sender: "user", text: userQuestion }]);
 
     try {
       const res = await axios.post(
         `${process.env.REACT_APP_BACKEND_URL}/chat`,
-        { question }
+        { question: userQuestion }
       );
 
       const answer = res.data.answer;
