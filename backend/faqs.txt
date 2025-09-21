@@ -1,0 +1,14 @@
+Q: How can I reset my password?
+A: You can reset your password by clicking on "Forgot Password" on the login page.
+
+Q: How do I check my account balance?
+A: Log in to the member portal and your balance will be displayed on the dashboard.
+
+Q: Can I transfer money between accounts?
+A: Yes, you can instantly transfer funds between your savings and checking accounts.
+
+Q: How can I get financial insights?
+A: Our system analyzes your spending patterns and provides personalized insights in the "Insights" section.
+
+Q: What should I do if I notice suspicious activity?
+A: Please contact our support team immediately through the Help Center or by calling our hotline.

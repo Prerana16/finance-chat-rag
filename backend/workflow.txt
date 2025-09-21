@@ -1,0 +1,17 @@
+Document ingestion → PyMuPDFLoader("finance_faq_extended.pdf") + TextLoader("faqs.txt")
+
+Chunking → RecursiveCharacterTextSplitter
+
+Embeddings → OpenAIEmbeddings
+
+Vector DB → Chroma
+
+Retriever → vectorstore.as_retriever()
+
+LLM → ChatOpenAI(model="gpt-4o-mini")
+
+Pipeline → RetrievalQA.from_chain_type()
+
+Backend API → FastAPI ask_question function
+
+Frontend → React app sending POST requests to /chat
