@@ -5,9 +5,15 @@ function App() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([{
       sender: "bot",
-      text: "Hello! I’m FinBot, your personal finance assistant. How can I help you today?",
+      text: "Hello! I’m FinBot, your personal finance assistant. You can ask me about your password reset, balances, transactions, fund transfers, or spending insights. How can I help you today?",
     },]);
-
+  
+  const exampleQuestions = [
+    "How to check my account balance?",
+    "How can I transfer funds?",
+    "What are my recent transactions?",
+    "How to contact customer support?",
+  ];
   const handleSend = async () => {
     if (!question.trim()) return;
 
@@ -89,6 +95,26 @@ function App() {
       >
         Send
       </button>
+      </div>
+      <div style={{ marginTop: "15px" }}>
+        <b>Try asking:</b>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "5px" }}>
+          {exampleQuestions.map((q, idx) => (
+            <button
+              key={idx}
+              onClick={() => handleSend(q)}
+              style={{
+                padding: "6px 10px",
+                backgroundColor: "#e0e0e0",
+                border: "none",
+                borderRadius: "5px",
+                cursor: "pointer",
+              }}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
