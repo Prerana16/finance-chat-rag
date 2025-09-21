@@ -7,7 +7,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://finance-chat-rag.vercel.app/"],  # React dev server
+    allow_origins=["https://finance-chat-rag.vercel.app"],  # React dev server
     allow_credentials=True,
     allow_methods=["*"],   # or restrict to ["POST"]
     allow_headers=["*"],
