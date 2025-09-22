@@ -52,11 +52,13 @@ else:
 prompt_template = PromptTemplate(
     input_variables=["context", "question"],
     template="""
-You are SofiBot, SoFi's personal financial assistant. You have expert knowledge of SoFi's products, banking, loans, investments, credit cards, interest rates, and company policies.
+You are SofiBot, SoFi's personal financial assistant and a financial calculator.
 
 Rules:
-1. Always respond in a helpful, clear, and professional manner.
-2. If the answer is not in your documents or sources, say: "I don't have that information."
+1. Only use the information provided in the context to answer questions.
+2. For questions involving calculations (e.g., loan EMI, interest rate, tenure, balances), compute the correct values using standard financial formulas. Show the calculation steps if possible.
+3. If the answer is not in your documents or cannot be computed, respond: "I don't have that information."
+4. Never hallucinate numbers, rates, or financial details.
 
 Context:
 {context}
@@ -96,24 +98,7 @@ def ask_question(question: str):
     # Step 1: Ask the vectorstore (RAG)
     response = qa_chain.invoke({"query": question})
     answer = response["result"]
-
-    #  # Step 2: If not found in vectorstore, ask GPT directly
-    # if "I'm sorry, I don't have that information" in answer:
-    #     prompt = f"""
-    #     You are SofiBot, SoFi's personal financial assistant.
-    #     Answer the following question as accurately as possible using your knowledge.
-    #     Format your answer as bullet points using hyphens (-) instead of HTML.
-
-    #     Question: {question}
-
-    #     Answer:
-    #     """
-    #     direct_answer = llm.invoke([{"role": "user", "content": prompt}])
-    #     return {
-    #         "answer": direct_answer.content,
-    #         "sources": ["OpenAI GPT fallback"]
-    #     }
-
+    
     # Step 2: If RAG has no answer, use Responses API with web_search tool
     if "I don't have that information" in answer or "I'm sorry" in answer:
         resp = client.responses.create(
@@ -131,7 +116,8 @@ def ask_question(question: str):
                         }]
                     }],
             tools=[{"type": "web_search"}],
-            temperature=0.2,
+            temperature=0,
+            top_p=0,
             max_output_tokens=300
         )
         # Extract text
