@@ -91,7 +91,7 @@ def ask_question(question: str):
     answer = response["result"]
 
     if "I couldn't find it in my documents" in answer:
-        # Perform DuckDuckGo search
+        # Step 2: Perform DuckDuckGo search
         ddgs = DDGS()
         search_results = ddgs.text(question, max_results=3)
         if not search_results:
@@ -100,16 +100,18 @@ def ask_question(question: str):
                 "sources": []
             }
 
+        # Combine top results into a single string
         combined_results = "\n".join(
-            [f"Snippet: {r['text']}\nLink: {r['url']}" for r in search_results]
+            [f"Title: {r['title']}\nSnippet: {r['body']}\nLink: {r['href']}" for r in search_results]
         )
+
         # Summarize using GPT
         summary = summary_chain.run({
             "search_results": combined_results,
             "question": question
         })
         return {
-            "answer": f"Here are some online results I found:\n{combined_results}",
+            "answer": summary,
             "sources": ["DuckDuckGo search"]
         }
 
