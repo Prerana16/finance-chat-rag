@@ -6,11 +6,14 @@ from langchain_community.vectorstores import Chroma
 from langchain.chains import RetrievalQA,  LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_community.document_loaders import PyMuPDFLoader, TextLoader
-from duckduckgo_search import DDGS
+from openai import OpenAI
 
 
 load_dotenv() 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+client = OpenAI(api_key=OPENAI_API_KEY)
+
 
 # Step 1: Embedding model
 embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
@@ -53,11 +56,8 @@ You are SofiBot, SoFi's personal financial assistant. You have expert knowledge 
 
 Rules:
 1. Always respond in a helpful, clear, and professional manner.
-2. Use ONLY the information provided in the context below or authoritative SoFi sources.
-3. If the answer is not in your documents or sources, say: "I'm sorry, I don't have that information right now."
-4. Do NOT provide information about unrelated topics (like SoFi Stadium, sports, etc.).
-5. If the user asks about comparing SoFi to other companies, provide a factual comparison only based on finance-related context.
-6. Keep answers concise and easy to understand for everyday users.
+2. If the answer is not in your documents or sources, say: "I don't have that information."
+
 Context:
 {context}
 
@@ -93,34 +93,58 @@ ddg_summary_prompt = PromptTemplate(
 )
 summary_chain = LLMChain(llm=llm, prompt=ddg_summary_prompt)
 def ask_question(question: str):
+    # Step 1: Ask the vectorstore (RAG)
     response = qa_chain.invoke({"query": question})
     answer = response["result"]
 
-    if "I couldn't find it in my documents" in answer:
-        # Step 2: Perform DuckDuckGo search
-        ddgs = DDGS()
-        search_results = ddgs.text(question, max_results=5)
-        if not search_results:
-            return {
-                "answer": "I searched online but couldn't find relevant results.",
-                "sources": []
-            }
+    #  # Step 2: If not found in vectorstore, ask GPT directly
+    # if "I'm sorry, I don't have that information" in answer:
+    #     prompt = f"""
+    #     You are SofiBot, SoFi's personal financial assistant.
+    #     Answer the following question as accurately as possible using your knowledge.
+    #     Format your answer as bullet points using hyphens (-) instead of HTML.
 
-        # Combine top results into a single string
-        combined_results = "\n".join(
-            [f"Title: {r['title']}\nSnippet: {r['body']}\nLink: {r['href']}" for r in search_results]
+    #     Question: {question}
+
+    #     Answer:
+    #     """
+    #     direct_answer = llm.invoke([{"role": "user", "content": prompt}])
+    #     return {
+    #         "answer": direct_answer.content,
+    #         "sources": ["OpenAI GPT fallback"]
+    #     }
+
+    # Step 2: If RAG has no answer, use Responses API with web_search tool
+    if "I don't have that information" in answer or "I'm sorry" in answer:
+        resp = client.responses.create(
+            model="gpt-4.1-mini",
+            input=[{"role": "system",
+                    "content": [{
+                        "type": "input_text",
+                        "text": "Act as financial assitant and Answer the questions in short bullets"
+                    }]},     
+                    {
+                        "role": "user",
+                        "content": [{
+                            "type": "input_text",
+                            "text": question
+                        }]
+                    }],
+            tools=[{"type": "web_search"}],
+            temperature=0.2,
+            max_output_tokens=300
         )
-
-        # Summarize using GPT
-        summary = summary_chain.run({
-            "search_results": combined_results,
-            "question": question
-        })
-        return {
-            "answer": summary,
-            "sources": ["DuckDuckGo search"]
-        }
-
+        # Extract text
+        # Extract text from ResponseOutputMessage objects
+        bullets = ""
+        if resp.output:
+            for item in resp.output:
+                if item.type == "message":
+                    for c in item.content:
+                        if c.type == "output_text":
+                            bullets += c.text + "\n"
+        return {"answer": bullets.strip() or "I couldn't find relevant info online.", "sources": ["OpenAI Web Search"]}
+    # If docs answered the question
     return {
         "answer": response["result"],
         "sources": [doc.page_content for doc in response["source_documents"]],
