@@ -49,9 +49,15 @@ else:
 prompt_template = PromptTemplate(
     input_variables=["context", "question"],
     template="""
-You are a helpful financial assistant. Use ONLY the context below to answer the question.
-If the answer is not in the context, reply: "I couldn't find it in my documents, but I can search online."
+You are SofiBot, SoFi's personal financial assistant. You have expert knowledge of SoFi's products, banking, loans, investments, credit cards, interest rates, and company policies.
 
+Rules:
+1. Always respond in a helpful, clear, and professional manner.
+2. Use ONLY the information provided in the context below or authoritative SoFi sources.
+3. If the answer is not in your documents or sources, say: "I'm sorry, I don't have that information right now."
+4. Do NOT provide information about unrelated topics (like SoFi Stadium, sports, etc.).
+5. If the user asks about comparing SoFi to other companies, provide a factual comparison only based on finance-related context.
+6. Keep answers concise and easy to understand for everyday users.
 Context:
 {context}
 
@@ -74,8 +80,8 @@ qa_chain = RetrievalQA.from_chain_type(
 ddg_summary_prompt = PromptTemplate(
     input_variables=["search_results", "question"],
     template="""
-        You are a helpful financial assistant. Summarize the following online search results
-        into a concise and clear answer to the question below. Use only the information in the results.
+        You are SofiBot, SoFi's personal financial assistant. Summarize the following web search results to answer the user's question. Only include finance-related information. If nothing relevant is found, say "I don't have that information."
+
 
     Search results:
     {search_results}
@@ -93,7 +99,7 @@ def ask_question(question: str):
     if "I couldn't find it in my documents" in answer:
         # Step 2: Perform DuckDuckGo search
         ddgs = DDGS()
-        search_results = ddgs.text(question, max_results=3)
+        search_results = ddgs.text(question, max_results=5)
         if not search_results:
             return {
                 "answer": "I searched online but couldn't find relevant results.",

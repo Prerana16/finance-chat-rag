@@ -7,7 +7,7 @@ This project consists of:
    cd backend
    python3 -m venv venv 
    source venv/bin/activate
-   pip install -r requirements.txt
+   pip3 install -r requirements.txt
    uvicorn app:app --reload --port 8000
 
 
