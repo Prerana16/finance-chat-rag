@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
-from langchain.chains import RetrievalQA,  LLMChain
+from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from langchain_community.document_loaders import PyMuPDFLoader, TextLoader
 from openai import OpenAI
@@ -55,10 +55,10 @@ prompt_template = PromptTemplate(
 You are SofiBot, SoFi's personal financial assistant and a financial calculator.
 
 Rules:
-1. Only use the information provided in the context to answer questions.
+1. Retrieve information from the vector store if available; otherwise, fall back to a web search.
 2. For questions involving calculations (e.g., loan EMI, interest rate, tenure, balances), compute the correct values using standard financial formulas. Show the calculation steps if possible.
 3. If the answer is not in your documents or cannot be computed, respond: "I don't have that information."
-4. Never hallucinate numbers, rates, or financial details.
+4. Avoid hallucinating numbers, rates, or financial details.
 
 Context:
 {context}
@@ -78,22 +78,11 @@ qa_chain = RetrievalQA.from_chain_type(
     chain_type_kwargs={"prompt": prompt_template}  # use our prompt template
 )
 
-# Step 4: Summarization prompt for DuckDuckGo results
-ddg_summary_prompt = PromptTemplate(
-    input_variables=["search_results", "question"],
-    template="""
-        You are SofiBot, SoFi's personal financial assistant. Summarize the following web search results to answer the user's question. Only include finance-related information. If nothing relevant is found, say "I don't have that information."
+def clean_response(text):
+    # Remove extra newlines and leading/trailing spaces
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    return "\n".join(lines)
 
-
-    Search results:
-    {search_results}
-
-    Question: {question}
-
-    Answer:
-    """
-)
-summary_chain = LLMChain(llm=llm, prompt=ddg_summary_prompt)
 def ask_question(question: str):
     # Step 1: Ask the vectorstore (RAG)
     response = qa_chain.invoke({"query": question})
@@ -106,7 +95,7 @@ def ask_question(question: str):
             input=[{"role": "system",
                     "content": [{
                         "type": "input_text",
-                        "text": "Act as financial assitant and Answer the questions in short bullets"
+                        "text": " You are SofiBot, SoFi's personal SoFi's personal financial assistant and a financial calculator. Help user with the financial questions and calculation if required. Answer in concise bullets points"
                     }]},     
                     {
                         "role": "user",
@@ -129,7 +118,8 @@ def ask_question(question: str):
                     for c in item.content:
                         if c.type == "output_text":
                             bullets += c.text + "\n"
-        return {"answer": bullets.strip() or "I couldn't find relevant info online.", "sources": ["OpenAI Web Search"]}
+        bullets = clean_response(bullets)
+        return {"answer": bullets or "I couldn't find relevant info online.", "sources": ["OpenAI Web Search"]}
     # If docs answered the question
     return {
         "answer": response["result"],
