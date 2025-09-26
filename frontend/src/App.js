@@ -50,7 +50,7 @@ function App() {
     } catch (err) {
       setMessages((prev) => [
         ...prev,
-        { sender: "bot", text: "⚠️ Error connecting to backend." },
+        { sender: "bot", text: "⚠️ Waiting for server to spin up. Please retry your question." },
       ]);
     }
 
